@@ -1,0 +1,5 @@
+https://plotly.com/python/scattermapbox/
+https://dash-gallery.plotly.host/Portal/
+https://automating-gis-processes.github.io/site/lessons/L5/overview.html
+https://ocefpaf.github.io/python4oceanographers/blog/2014/08/18/gpx/
+https://community.plotly.com/t/best-way-to-incorporate-matplotlib-plot-in-dash-app/12896/8
