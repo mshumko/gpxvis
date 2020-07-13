@@ -16,4 +16,5 @@
 
 # Maps
 - https://plotly.com/python/scattermapbox/
+- https://plotly.com/python/mapbox-density-heatmaps/
 - https://github.com/jwass/mplleaflet
