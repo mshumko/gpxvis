@@ -5,6 +5,13 @@
 - https://ocefpaf.github.io/python4oceanographers/blog/2014/08/18/gpx/
 - https://community.plotly.com/t/best-way-to-incorporate-matplotlib-plot-in-dash-app/12896/8
 - https://towardsdatascience.com/creating-an-interactive-data-app-using-plotlys-dash-356428b4699c
+- https://dash-gallery.plotly.host/Portal/
+
+
+# Django
+- https://realpython.com/get-started-with-django-1/
+- https://www.youtube.com/watch?v=yD0_1DPmfKM&list=PLQVvvaa0QuDe9nqlirjacLkBYdgc2inh3&index=1&ab_channel=sentdex
+
 
 # PySimpleGUIQt (Desktop-based GUI)
 - https://pypi.org/project/PySimpleGUIQt/
@@ -18,3 +25,7 @@
 - https://plotly.com/python/scattermapbox/
 - https://plotly.com/python/mapbox-density-heatmaps/
 - https://github.com/jwass/mplleaflet
+- https://www.fullstackpython.com/blog/maps-django-web-applications-projects-mapbox.html
+
+# Project managment
+- https://realpython.com/python-import/
