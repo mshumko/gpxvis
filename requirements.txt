@@ -1,0 +1,6 @@
+--index-url https://pypi.python.org/simple/ # Force the 
+gpxpy==1.4.2
+matplotlib==3.3.2
+numpy==1.19.2
+pandas==1.1.2
+-e .
