@@ -24,3 +24,10 @@ pip3.8 install -r requirements.txt
 # TO-DO
 - [ ] 
 
+# Lessons Learned 
+## Structuring a Package
+1. __init__.py makes this a standard package (a folder with multiple files) and not a module (a single .py file). You can use this file to automatically import the submodules so the user does not have to.
+2. The __main__.py file is a special file that only gets called when you call the module specifically. In other words, call gpxvis with ```python3 -m gpxvis```. This file can be used to set up
+data file directories and write to a config.json file, for example.
+3. Pip can be used to install local packages and not just from PyPi. For example, the requirements.txt file has been organized to install the dependencies from PyPi first, then followed by installing this package with the ```-e``` flag to make it editable without reinstalling gpxvis after every source code update.
+
