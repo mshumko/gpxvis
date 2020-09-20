@@ -1,6 +1,12 @@
---index-url https://pypi.python.org/simple/ # Force the 
+# Force the dependency source to the pypi url
+--index-url https://pypi.python.org/simple/ 
+
+# Specific dependencies to gpxvis
 gpxpy==1.4.2
 matplotlib==3.3.2
 numpy==1.19.2
 pandas==1.1.2
+
+# Install gpxvis in editable (-e) mode so I can develop it without 
+# reinstalling it after every change.
 -e .
