@@ -1,4 +1,4 @@
-# gpxviz
+# gpxvis
 
 This project documents my learning experience with the following three topics:
 
