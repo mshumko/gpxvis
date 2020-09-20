@@ -1,1 +1,1 @@
-from gpxvis import front_end
+import gpxvis.front_end
