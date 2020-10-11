@@ -16,8 +16,10 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+# map_fig = px.Figure()
+
 app.layout = html.Div([
-    dcc.Graph(id='map_plot'),
+    dcc.Graph(id='map_plot'),#, figure=map_fig),
 
     dcc.Upload(
         id='upload-gpx',
@@ -85,7 +87,23 @@ def load_gpx(contents):
     gpx_df = gpx_df.loc[1:, :]
     gpx_df.set_index('time', inplace=True)
     print(gpx_df.head())
-    return gpx_df.to_json()
+    return gpx_df.to_json(date_format='iso', orient='split')
+
+@app.callback(Output('map_plot', 'figure'),
+            [Input('_track', 'children')])
+def make_map(json_df):
+    """
+
+    """
+    if not isinstance(json_df, pd.DataFrame):
+        fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+    else:
+        map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+        fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
+                        color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+    fig.update_layout(mapbox_style="open-street-map")
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    return fig
 
 def haversine(x1, x2):
     """
