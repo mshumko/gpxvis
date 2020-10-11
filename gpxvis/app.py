@@ -21,9 +21,9 @@ app.layout = html.Div([
 
     dcc.Upload(
         id='upload-gpx',
-        children=html.Div([
+        children=html.Div(children=[
             'Drag and Drop, ',
-            html.A('Select Files'), 'or', html.A('Load the example')
+            html.A('Select Files')
         ]),
         style={
             'width': '100%',
@@ -36,64 +36,56 @@ app.layout = html.Div([
             'margin': '10px'
         },
         # Allow multiple files to be uploaded
-        multiple=True
+        multiple=False
     ),
 
-    # Hidden div inside the app that stores the intermediate value
+    # Hidden div inside the app that stores the track data in json format.
     html.Div(id='_track', style={'display': 'none'})
 ])
 
 @app.callback(Output('_track', 'children'),
-              [Input('upload-gpx', 'contents')],
-              [State('upload-gpx', 'filename'),
-               State('upload-gpx', 'last_modified')])
-def load_gpx(contents, names, dates):
+              [Input('upload-gpx', 'contents')])
+def load_gpx(contents):
     """
     Load the gpx segment coordinate points, calculate the velocity, and save to
     pd.DataFrame. 
     """
     if contents is None:
         return ''
-    content_type, content_string = contents.split(',')
-
+    content_string = contents[0].split(',')[1]
     decoded = base64.b64decode(content_string)
-    print(decoded)
-    return ''
-    #content_type, content_string = contents.split(',')
-    # decoded = base64.b64decode(content_string)
-    # file_path = io.StringIO(decoded.decode('utf-8'))
 
-    # print(f'Opening {file_path}')
-    # with open(file_path, 'r') as f:
-    #     gpx = gpxpy.parse(f)
-    #     for track in gpx.tracks:
-    #         for segment in track.segments:
-    #             n = len(segment.points)
-    #             gpx_df = pd.DataFrame(
-    #                 data={
-    #                     'time':np.zeros(n, dtype=object),
-    #                     'lat':np.zeros(n, dtype=float),
-    #                     'lon':np.zeros(n, dtype=float),
-    #                     'elevation_km':np.zeros(n, dtype=float)
-    #                     }
-    #                 )
-    #             for row, point in enumerate(segment.points):
-    #                 point_data = [point.time.replace(tzinfo=None), point.latitude, 
-    #                               point.longitude, point.elevation/1000]
-    #                 gpx_df.loc[row, ['time', 'lat', 'lon', 'elevation_km']] = point_data
+    #with open(file_path, 'r') as f:
+    gpx = gpxpy.parse(io.StringIO(decoded.decode('utf-8')))
 
-    # # Calculate the speed
-    # gpx_df['time'] = pd.to_datetime(gpx_df['time'])
-    # gpx_df['dt'] = gpx_df['time'].diff(1).dt.total_seconds()
-    # gpx_df.loc[1:, 'dx'] = haversine(
-    #     gpx_df.loc[1:, ['lat', 'lon', 'elevation_km']], 
-    #     gpx_df.loc[:gpx_df.shape[0]-2, ['lat', 'lon', 'elevation_km']]
-    #                     )
-    # gpx_df['vel_km_hr'] = gpx_df['dx']/(gpx_df['dt']/3600)
-    # gpx_df = gpx_df.loc[1:, :]
-    # gpx_df.set_index('time', inplace=True)
-    # print(gpx_df)
-    #return gpx_df
+    for track in gpx.tracks:
+        for segment in track.segments:
+            n = len(segment.points)
+            gpx_df = pd.DataFrame(
+                data={
+                    'time':np.zeros(n, dtype=object),
+                    'lat':np.zeros(n, dtype=float),
+                    'lon':np.zeros(n, dtype=float),
+                    'elevation_km':np.zeros(n, dtype=float)
+                    }
+                )
+            for row, point in enumerate(segment.points):
+                point_data = [point.time.replace(tzinfo=None), point.latitude, 
+                                point.longitude, point.elevation/1000]
+                gpx_df.loc[row, ['time', 'lat', 'lon', 'elevation_km']] = point_data
+
+    # Calculate the speed
+    gpx_df['time'] = pd.to_datetime(gpx_df['time'])
+    gpx_df['dt'] = gpx_df['time'].diff(1).dt.total_seconds()
+    gpx_df.loc[1:, 'dx'] = haversine(
+        gpx_df.loc[1:, ['lat', 'lon', 'elevation_km']], 
+        gpx_df.loc[:gpx_df.shape[0]-2, ['lat', 'lon', 'elevation_km']]
+                        )
+    gpx_df['vel_km_hr'] = gpx_df['dx']/(gpx_df['dt']/3600)
+    gpx_df = gpx_df.loc[1:, :]
+    gpx_df.set_index('time', inplace=True)
+    print(gpx_df.head())
+    return gpx_df.to_json()
 
 def haversine(x1, x2):
     """
