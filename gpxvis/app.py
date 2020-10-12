@@ -1,3 +1,4 @@
+import json
 import base64
 import io
 import pathlib
@@ -63,7 +64,11 @@ app.layout = html.Div(children=[
     ]),
 
     # Hidden div inside the app that stores the track data in json format.
-    html.Div(id='_track', style={'display': 'none'})
+    html.Div(id='_track', style={'display': 'none'}),
+
+    # Hidden div inside the app that stores the user's last mouse position
+    # in the distance vs elevation plot.
+    html.Div(id='hover_data', style={'display': 'none'}),
 ])
 
 @app.callback(Output('_track', 'children'),
@@ -156,6 +161,13 @@ def make_elev_plot(json_df):
         margin={"r":0,"t":0,"l":0,"b":0},
         )
     return fig
+
+@app.callback(
+    Output('hover_data', 'children'),
+    [Input('elevation_plot', 'hoverData')])
+def display_hover_data(hoverData):
+    print(json.dumps(hoverData, indent=2))
+    return json.dumps(hoverData, indent=2)
 
 def haversine(x1, x2):
     """
