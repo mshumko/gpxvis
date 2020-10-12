@@ -1,5 +1,6 @@
 import base64
 import io
+import pathlib
 
 import gpxpy
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 import plotly.express as px
 
 Re_km = 6371
@@ -16,10 +17,10 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-# map_fig = px.Figure()
-
+# map_fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
+#                             center={'lat':39, 'lon':-100})
+map_fix = px
 app.layout = html.Div([
-    dcc.Graph(id='map_plot'),#, figure=map_fig),
 
     dcc.Upload(
         id='upload-gpx',
@@ -41,26 +42,41 @@ app.layout = html.Div([
         multiple=False
     ),
 
+    dcc.Graph(id='map_plot'),
+
     # Hidden div inside the app that stores the track data in json format.
     html.Div(id='_track', style={'display': 'none'})
 ])
 
 @app.callback(Output('_track', 'children'),
-              [Input('upload-gpx', 'contents')])
+              [Input('upload-gpx', 'contents')],
+              # prevent_initial_call or dash.exceptions.PreventUpdate works
+              prevent_initial_call=True)
 def load_gpx(contents):
     """
     Load the gpx segment coordinate points, calculate the velocity, and save to
     pd.DataFrame. 
     """
-    if contents is None:
-        return ''
-    content_string = contents[0].split(',')[1]
-    decoded = base64.b64decode(content_string)
+    # if contents is None:
+    #     return PreventUpdate
+    if isinstance(contents, pathlib.Path):
+        with open(contents, 'r') as f:
+            gpx_df = parse_gpx(gpxpy.parse(f))
+    elif isinstance(contents, str):
+        content_string = contents.split(',')[1]
+        decoded = base64.b64decode(content_string)
+        gpx = gpxpy.parse(io.StringIO(decoded.decode('utf-8')))
+        gpx_df = parse_gpx(gpx)
+    else:
+        raise TypeError('Unknown contens type.')
+    return gpx_df.to_json(date_format='iso', orient='split')
 
-    #with open(file_path, 'r') as f:
-    gpx = gpxpy.parse(io.StringIO(decoded.decode('utf-8')))
-
-    for track in gpx.tracks:
+def parse_gpx(gpx_obj):
+    """
+    Parse the gpx segment coordinate points, calculate the velocity, and save to
+    pd.DataFrame. 
+    """
+    for track in gpx_obj.tracks:
         for segment in track.segments:
             n = len(segment.points)
             gpx_df = pd.DataFrame(
@@ -86,23 +102,30 @@ def load_gpx(contents):
     gpx_df['vel_km_hr'] = gpx_df['dx']/(gpx_df['dt']/3600)
     gpx_df = gpx_df.loc[1:, :]
     gpx_df.set_index('time', inplace=True)
-    print(gpx_df.head())
-    return gpx_df.to_json(date_format='iso', orient='split')
+    return gpx_df
 
 @app.callback(Output('map_plot', 'figure'),
-            [Input('_track', 'children')])
+            [Input('_track', 'children')], 
+            prevent_initial_call=True)
 def make_map(json_df):
     """
 
     """
-    if not isinstance(json_df, pd.DataFrame):
-        fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-    else:
-        map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-        fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
-                        color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-    fig.update_layout(mapbox_style="open-street-map")
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    print('Making map')
+    print(json_df[:100])
+    map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+    fig = px.line(map_df, x="lon", y="lat")
+    # fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
+    #                         center={'lat':39, 'lon':-100})
+    # fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=4)
+    # if not isinstance(json_df, pd.DataFrame):
+    #     fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+    # else:
+    #     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+    #     fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
+    #                     color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+    # fig.update_layout(mapbox_style="open-street-map")
+    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 
 def haversine(x1, x2):
