@@ -23,11 +23,20 @@ if pathlib.Path('mapbox_token').exists():
         mapbox_token = f.read()
     px.set_mapbox_access_token(mapbox_token)
 
-# map_fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
-#                             center={'lat':39, 'lon':-100})
-map_fix = px
-app.layout = html.Div([
+int_map=px.scatter_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
+int_map.update_layout(
+    margin={"r":0,"t":0,"l":0,"b":0},
+    )
+int_evel_fig=px.line(x=[0], y=[0], 
+    labels={'x':'distance [km]', 'y':'elevation [km]'})
+int_evel_fig.update_layout(
+    margin={"r":0,"t":0,"l":0,"b":0},
+    )
 
+app.layout = html.Div(children=[
+
+    html.H1('gpxvis: a gpx file visualizer', style={"textAlign":"center"}),
+        
     dcc.Upload(
         id='upload-gpx',
         children=html.Div(children=[
@@ -48,8 +57,10 @@ app.layout = html.Div([
         multiple=False
     ),
 
-    dcc.Graph(id='map_plot'),
-    # dcc.Graph(id='elevation_plot'),
+    html.Div([
+    dcc.Graph(id='map_plot', figure=int_map, style={'height':'48vh'}),
+    dcc.Graph(id='elevation_plot', style={'height':'30vh'}, figure=int_evel_fig),
+    ]),
 
     # Hidden div inside the app that stores the track data in json format.
     html.Div(id='_track', style={'display': 'none'})
@@ -106,6 +117,7 @@ def parse_gpx(gpx_obj):
         gpx_df.loc[1:, ['lat', 'lon', 'elevation_km']], 
         gpx_df.loc[:gpx_df.shape[0]-2, ['lat', 'lon', 'elevation_km']]
                         )
+    gpx_df.loc[1:, 'distance'] = np.cumsum(gpx_df.loc[1:, 'dx'])
     gpx_df['vel_km_hr'] = gpx_df['dx']/(gpx_df['dt']/3600)
     gpx_df = gpx_df.loc[1:, :]
     gpx_df.set_index('time', inplace=True)
@@ -118,42 +130,32 @@ def make_map(json_df):
     """
 
     """
-    print('Making map')
-    print(json_df[:100])
+    fig=px.scatter_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-    #fig = px.line(map_df, x="lon", y="lat")
 
-    fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", zoom=12,
+    fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", zoom=13,
                   mapbox_style="outdoors") #  config={'displayModeBar': False}
-    min_max = map_df.loc[:, ['lat', 'lon']].describe().loc[['min','max']]
-    print(min_max)
-
-    fig.update_xaxes(range=min_max.lon)
-    fig.update_yaxes(range=min_max.lat)
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        )
     return fig
 
-# @app.callback(Output('elevation_plot', 'figure'),
-#             [Input('_track', 'children')], 
-#             prevent_initial_call=True)
-# def make_map(json_df):
-#     """
+@app.callback(Output('elevation_plot', 'figure'),
+            [Input('_track', 'children')], 
+            prevent_initial_call=True)
+def make_elev_plot(json_df):
+    """
 
-#     """
-#     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-#     fig = px.line(map_df, x="lon", y="lat")
-#     # fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
-#     #                         center={'lat':39, 'lon':-100})
-#     # fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=4)
-#     # if not isinstance(json_df, pd.DataFrame):
-#     #     fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-#     # else:
-#     #     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-#     #     fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
-#     #                     color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-#     # fig.update_layout(mapbox_style="open-street-map")
-#     # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-#     return fig
+    """
+    fig=px.scatter_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
+    map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+
+    fig = px.area(map_df, x='distance', y='elevation_km', 
+        range_y=[map_df.loc[:, 'elevation_km'].min(), 1.1*map_df.loc[:, 'elevation_km'].max()])
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        )
+    return fig
 
 def haversine(x1, x2):
     """
