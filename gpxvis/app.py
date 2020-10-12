@@ -17,6 +17,12 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+# Load the mapbox token if it exists.
+if pathlib.Path('mapbox_token').exists():
+    with open('mapbox_token') as f:
+        mapbox_token = f.read()
+    px.set_mapbox_access_token(mapbox_token)
+
 # map_fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
 #                             center={'lat':39, 'lon':-100})
 map_fix = px
@@ -43,6 +49,7 @@ app.layout = html.Div([
     ),
 
     dcc.Graph(id='map_plot'),
+    # dcc.Graph(id='elevation_plot'),
 
     # Hidden div inside the app that stores the track data in json format.
     html.Div(id='_track', style={'display': 'none'})
@@ -114,19 +121,39 @@ def make_map(json_df):
     print('Making map')
     print(json_df[:100])
     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-    fig = px.line(map_df, x="lon", y="lat")
-    # fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
-    #                         center={'lat':39, 'lon':-100})
-    # fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=4)
-    # if not isinstance(json_df, pd.DataFrame):
-    #     fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-    # else:
-    #     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
-    #     fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
-    #                     color_discrete_sequence=["fuchsia"], zoom=3, height=300)
-    # fig.update_layout(mapbox_style="open-street-map")
-    # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    #fig = px.line(map_df, x="lon", y="lat")
+
+    fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", zoom=12,
+                  mapbox_style="outdoors") #  config={'displayModeBar': False}
+    min_max = map_df.loc[:, ['lat', 'lon']].describe().loc[['min','max']]
+    print(min_max)
+
+    fig.update_xaxes(range=min_max.lon)
+    fig.update_yaxes(range=min_max.lat)
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
+
+# @app.callback(Output('elevation_plot', 'figure'),
+#             [Input('_track', 'children')], 
+#             prevent_initial_call=True)
+# def make_map(json_df):
+#     """
+
+#     """
+#     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+#     fig = px.line(map_df, x="lon", y="lat")
+#     # fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=8,
+#     #                         center={'lat':39, 'lon':-100})
+#     # fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=4)
+#     # if not isinstance(json_df, pd.DataFrame):
+#     #     fig = px.scatter_mapbox(color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+#     # else:
+#     #     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+#     #     fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", hover_data=["elevation_km", "vel_km_hr"],
+#     #                     color_discrete_sequence=["fuchsia"], zoom=3, height=300)
+#     # fig.update_layout(mapbox_style="open-street-map")
+#     # fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+#     return fig
 
 def haversine(x1, x2):
     """
