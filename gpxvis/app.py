@@ -135,10 +135,10 @@ def make_map(json_df):
     """
 
     """
-    fig=px.scatter_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
+    # fig=px.line_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
 
-    fig = px.scatter_mapbox(map_df, lat="lat", lon="lon", zoom=13,
+    fig = px.line_mapbox(map_df, lat="lat", lon="lon", zoom=13,
                   mapbox_style="outdoors") #  config={'displayModeBar': False}
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -156,9 +156,15 @@ def make_elev_plot(json_df):
     map_df = pd.read_json(json_df, orient='split') # convert_dates=True
 
     fig = px.area(map_df, x='distance', y='elevation_km', 
-        range_y=[map_df.loc[:, 'elevation_km'].min(), 1.1*map_df.loc[:, 'elevation_km'].max()])
+        range_y=[map_df.loc[:, 'elevation_km'].min(), 1.1*map_df.loc[:, 'elevation_km'].max()],
+        )
+    fig.update_traces(mode="lines", hovertemplate=None)
+
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
+        hovermode="x unified",
+        xaxis={'title':'distance [km]'},
+        yaxis={'title':'elevation [km]'}
         )
     return fig
 
