@@ -36,7 +36,7 @@ int_evel_fig.update_layout(
 
 app.layout = html.Div(children=[
 
-    html.H1('gpxvis: a gpx file visualizer', style={"textAlign":"center"}),
+    html.H1('gpxvis: visualize gpx tracks', style={"textAlign":"center"}),
         
     dcc.Upload(
         id='upload-gpx',
@@ -68,7 +68,7 @@ app.layout = html.Div(children=[
 
     # Hidden div inside the app that stores the user's last mouse position
     # in the distance vs elevation plot.
-    html.Div(id='hover_data', style={'display': 'none'}),
+    html.Div(id='hover_dist', style={'display': 'none'}),
 ])
 
 @app.callback(Output('_track', 'children'),
@@ -148,15 +148,15 @@ def make_map(json_df):
 @app.callback(Output('elevation_plot', 'figure'),
             [Input('_track', 'children')], 
             prevent_initial_call=True)
-def make_elev_plot(json_df):
+def make_elev_plot(track_json):
     """
 
     """
     fig=px.scatter_mapbox(lat=[0], lon=[0], center={'lat':39, 'lon':-100}, zoom=3)
-    map_df = pd.read_json(json_df, orient='split') # convert_dates=True
+    track_df = pd.read_json(track_json, orient='split') # convert_dates=True
 
-    fig = px.area(map_df, x='distance', y='elevation_km', 
-        range_y=[map_df.loc[:, 'elevation_km'].min(), 1.1*map_df.loc[:, 'elevation_km'].max()],
+    fig = px.area(track_df, x='distance', y='elevation_km', 
+        range_y=[track_df.loc[:, 'elevation_km'].min(), 1.1*track_df.loc[:, 'elevation_km'].max()],
         )
     fig.update_traces(mode="lines", hovertemplate=None)
 
@@ -168,12 +168,17 @@ def make_elev_plot(json_df):
         )
     return fig
 
-@app.callback(
-    Output('hover_data', 'children'),
-    [Input('elevation_plot', 'hoverData')])
-def display_hover_data(hoverData):
-    print(json.dumps(hoverData, indent=2))
-    return json.dumps(hoverData, indent=2)
+# @app.callback(
+#     Output('current_loc', 'figure'),
+#     [Input('elevation_plot', 'hoverData'),
+#     Input('_track', 'children'),
+#     Input('current_loc', 'figure')],
+#     prevent_initial_call=True)
+# def display_hover_data(hoverData, track_json, current_loc):
+#     pointIndex = hoverData['points'][0]['pointIndex']
+#     map_df = pd.read_json(track_json, orient='split')
+#     current_loc.update_traces(customdata=map_df.loc[pointIndex, ['lat', 'lon']])
+#     return current_loc
 
 def haversine(x1, x2):
     """
